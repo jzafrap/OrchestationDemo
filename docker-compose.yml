@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  workflowhost:
+    build: ./WorkflowHost
+    container_name: workflowhost_app
+    ports:
+      - "5000:80"
+    depends_on:
+      - orderservice
+      - paymentservice
+
+  workflowhost-sidecar:
+    image: daprio/dapr:latest
+    network_mode: "service:workflowhost"
+    depends_on:
+      - workflowhost
+    entrypoint: ["/daprd", "--app-id", "workflowhost", "--app-port", "80", "--components-path", "/components"]
+    volumes:
+      - ./components:/components
+
+  orderservice:
+    build: ./OrderService
+    container_name: orderservice_app
+    ports:
+      - "5001:80"
+
+  orderservice-sidecar:
+    image: daprio/dapr:latest
+    network_mode: "service:orderservice"
+    depends_on:
+      - orderservice
+    entrypoint: ["/daprd", "--app-id", "orderservice", "--app-port", "80", "--components-path", "/components"]
+    volumes:
+      - ./components:/components
+
+  paymentservice:
+    build: ./PaymentService
+    container_name: paymentservice_app
+    ports:
+      - "5002:80"
+
+  paymentservice-sidecar:
+    image: daprio/dapr:latest
+    network_mode: "service:paymentservice"
+    depends_on:
+      - paymentservice
+    entrypoint: ["/daprd", "--app-id", "paymentservice", "--app-port", "80", "--components-path", "/components"]
+    volumes:
+      - ./components:/components
